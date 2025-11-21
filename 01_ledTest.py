@@ -1,4 +1,4 @@
-#動かないのであきらめる
+#動かないのであきらめる編集テスト
 
 from gpiozero import LED
 from time import sleep
