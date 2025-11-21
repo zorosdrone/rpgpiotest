@@ -73,11 +73,17 @@ python3 03_servo_pro.py
 # pigpiod が起動していることを確認
 sudo systemctl status pigpiod
 
+# 仮想環境を有効化
+source venv/bin/activate
+
 # サーバー起動
 python3 04_webServo.py
 
 # ブラウザでアクセス
 # http://<Raspberry_Pi_IP>:8000
+
+# 終了後は仮想環境を無効化
+deactivate
 ```
 
 Raspberry Pi のIPアドレスを確認：

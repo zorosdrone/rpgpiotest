@@ -5,10 +5,12 @@ Raspberry Pi OS セットアップ スクリプト (Python版)
 rpgiotestプロジェクト用
 
 使用方法:
-    python3 setup_rpi.py
+    python3 setup_rpi.py              # 通常実行（アップデート含む）
+    python3 setup_rpi.py --skip-update # アップデートをスキップ
+    python3 setup_rpi.py -s            # アップデートをスキップ (短縮形)
 
 このスクリプトは以下の処理を自動化します:
-    - システムパッケージの更新
+    - システムパッケージの更新 (--skip-update で スキップ可能)
     - 必須Pythonライブラリのインストール
     - pigpiod の自動起動設定
     - GPIO アクセス権の設定
@@ -76,6 +78,12 @@ def is_raspberry_pi():
 def main():
     print_header("Raspberry Pi GPIO テストプロジェクト セットアップ")
     
+    # コマンドラインオプションの確認
+    skip_update = "--skip-update" in sys.argv or "-s" in sys.argv
+    if skip_update:
+        print_info("システムアップデートをスキップします")
+        print()
+    
     # Raspberry Pi チェック
     if not is_raspberry_pi():
         print_info("このスクリプトは Raspberry Pi 上で実行してください")
@@ -87,8 +95,13 @@ def main():
     
     # ステップ 1: システム更新
     print_step(1, steps, "システムパッケージを更新中")
-    run_command("apt-get update", "apt update", sudo=True)
-    run_command("apt-get upgrade -y", "apt upgrade", sudo=True)
+    if skip_update:
+        print_info("システムアップデートをスキップしました")
+        print()
+    else:
+        print_info("これには5〜10分かかる場合があります")
+        run_command("apt-get update", "apt update", sudo=True)
+        run_command("apt-get upgrade -y", "apt upgrade", sudo=True)
     
     # ステップ 2: 必須パッケージのインストール
     print_step(2, steps, "必須パッケージをインストール中")
@@ -103,9 +116,21 @@ def main():
     run_command(f"apt-get install -y {' '.join(packages)}", 
                 "必須パッケージをインストール", sudo=True)
     
-    # ステップ 3: Python ライブラリのインストール
+    # ステップ 3: Python ライブラリのインストール（仮想環境使用）
     print_step(3, steps, "Python ライブラリをインストール中")
-    run_command("pip3 install --upgrade pip", "pip をアップグレード", sudo=False)
+    
+    # 仮想環境を作成
+    venv_path = os.path.expanduser("~/rpgpiotest/venv")
+    if not os.path.exists(venv_path):
+        print_info("仮想環境を作成中...")
+        run_command("python3 -m venv ~/rpgpiotest/venv", 
+                   "仮想環境を作成", sudo=False)
+    
+    # 仮想環境内の pip を使用してパッケージをインストール
+    pip_cmd = os.path.expanduser("~/rpgpiotest/venv/bin/pip")
+    
+    run_command(f"{pip_cmd} install --upgrade pip", 
+               "pip をアップグレード", sudo=False)
     
     python_packages = [
         "gpiozero",
@@ -113,7 +138,7 @@ def main():
         "flask",
         "RPi.GPIO",
     ]
-    run_command(f"pip3 install {' '.join(python_packages)}", 
+    run_command(f"{pip_cmd} install {' '.join(python_packages)}", 
                 "Python ライブラリをインストール", sudo=False)
     
     # ステップ 4: pigpiod の自動起動設定
@@ -148,17 +173,22 @@ def main():
     # 完了メッセージ
     print_header("セットアップ完了！")
     
+    print(f"{Colors.BOLD}📦 インストール場所:{Colors.ENDC}")
+    print("  • Python パッケージ: ~/rpgpiotest/venv 内")
+    print()
+    
     print(f"{Colors.BOLD}実行可能なプログラム:{Colors.ENDC}")
     print("  • LED テスト:        python3 01_ledTest.py")
     print("  • サーボ テスト:      python3 02_sarvo.py")
     print("  • サーボ Pro:        python3 03_servo_pro.py")
-    print("  • Web サーボ制御:    python3 04_webServo.py")
+    print("  • Web サーボ制御:    source venv/bin/activate && python3 04_webServo.py")
     print()
     
     print(f"{Colors.BOLD}注意事項:{Colors.ENDC}")
     print("  • pigpiod は自動起動しています")
+    print("  • Python パッケージは仮想環境（venv）内にインストールされています")
+    print("  • Web UI を実行する場合は、まず 'source venv/bin/activate' を実行してください")
     print("  • GPIO グループの設定は再起動後に有効になります")
-    print("  • Web UI の場合、ブラウザから http://<Pi_IP>:8000 にアクセス")
     print("  • Ctrl+C でプログラムを終了できます")
     print()
     
