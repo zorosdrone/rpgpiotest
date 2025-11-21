@@ -51,6 +51,27 @@ sudo systemctl start pigpiod
 sudo usermod -a -G gpio pi
 ```
 
+## 🔄 GitHub から最新コードを取得
+
+セットアップ後、GitHub に更新があった場合は以下のコマンドで最新コードを取得できます。
+
+```bash
+cd ~/rpgpiotest
+
+# 方法 1: 直接 git コマンド
+git pull origin main
+
+# 方法 2: 自動更新スクリプト (推奨)
+./update.sh          # Bash版
+# または
+python3 update.py    # Python版
+```
+
+更新スクリプトは以下を自動で実行します：
+- Git の状態確認
+- GitHub から最新コードを取得
+- 最新のコミット情報を表示
+
 ## 📝 使い方
 
 ### LED テスト
