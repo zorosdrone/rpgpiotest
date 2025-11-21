@@ -35,10 +35,16 @@ HTML_TEMPLATE = """
         <h1>Keyboard Control</h1>
         <p>Angle: <span id="val">{{ angle }}</span>&deg;</p>
         
-        <input type="range" min="-90" max="90" value="{{ angle }}" id="slider"
-               oninput="updateDisplay(this.value)" 
-               onchange="send(this.value)">
+         <input type="range" min="-90" max="90" value="{{ angle }}" id="slider"
+             oninput="handleInput(this.value)"
+             onchange="send(this.value)">
                
+        <!-- 追加: 左右ボタン -->
+        <div style="margin-top:16px; display:flex; justify-content:center; gap:12px;">
+            <button id="btnLeft" onclick="send(currentAngle - step)" style="padding:10px 18px; font-size:1em;">◀ Left</button>
+            <button id="btnRight" onclick="send(currentAngle + step)" style="padding:10px 18px; font-size:1em;">Right ▶</button>
+        </div>
+
         <div class="instructions">
             <p><b>キーボード操作:</b></p>
             <p><span class="key">→</span> or <span class="key">D</span> : 右へ回転 (+5°)</p>
@@ -51,12 +57,26 @@ HTML_TEMPLATE = """
 
     <script>
         let currentAngle = {{ angle }};
-        const step = 5; // 1回押すごとに動く角度
+        const step = 25; // 1回押すごとに動く角度
 
         // 値を表示だけ更新する関数
         function updateDisplay(val) {
             document.getElementById('val').innerText = val;
             currentAngle = parseInt(val);
+        }
+
+        // oninput 時にサーボを動かすためのデバウンスハンドラ
+        let sendTimer = null;
+        const SEND_DELAY = 50; // ms
+        function handleInput(val) {
+            // 表示は即時更新
+            updateDisplay(val);
+            // 送信は短い遅延でデバウンス
+            if (sendTimer) clearTimeout(sendTimer);
+            sendTimer = setTimeout(() => {
+                send(val);
+                sendTimer = null;
+            }, SEND_DELAY);
         }
 
         // サーバーに送信する関数
