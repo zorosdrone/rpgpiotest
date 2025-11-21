@@ -57,7 +57,7 @@ HTML_TEMPLATE = """
 
     <script>
         let currentAngle = {{ angle }};
-        const step = 5; // 1回押すごとに動く角度
+        const step = 25; // 1回押すごとに動く角度
 
         // 値を表示だけ更新する関数
         function updateDisplay(val) {
