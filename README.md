@@ -8,6 +8,7 @@
 - `02_sarvo.py` - 基本的なサーボ制御テスト (gpiozero デフォルト)
 - `03_servo_pro.py` - pigpio を使った高精度サーボ制御
 - `04_webServo.py` - pigpio を使って AngularServo を Web UI で操作
+- `041_webServo_key.py` - キーボード操作と左右ボタンでサーボを操作する Web UI
 
 ## 🚀 クイックセットアップ
 
@@ -97,8 +98,12 @@ sudo systemctl status pigpiod
 # 仮想環境を有効化
 source venv/bin/activate
 
-# サーバー起動
+# サーバー起動 (基本)
 python3 04_webServo.py
+
+# またはキーボード/ボタン操作付きの Web UI
+# (スライダーを動かしたときに即座にサーボへ送信されます)
+python3 rpgpiotest/041_webServo_key.py
 
 # ブラウザでアクセス
 # http://<Raspberry_Pi_IP>:8000
@@ -111,6 +116,26 @@ Raspberry Pi のIPアドレスを確認：
 ```bash
 hostname -I
 ```
+
+### Keyboard / Button Web UI (041)
+
+`041_webServo_key.py` はブラウザ上でスライダー、左右ボタン、またはキーボード（←→ / A D / Space）でサーボを操作する Web UI です。
+
+- スライダーは「移動させたとき」にデバウンス送信してサーボを即時更新します（離したときではありません）。
+- 左右ボタンで角度をステップ（デフォルト 5°）ずつ増減できます。
+- キーボード操作: 矢印キーまたは `A`/`D`、スペースで中央リセット。
+
+実行:
+```bash
+# 仮想環境を有効化
+source venv/bin/activate
+
+# サーバー起動
+python3 rpgpiotest/041_webServo_key.py
+```
+
+ブラウザで `http://<Raspberry_Pi_IP>:8000` にアクセスして操作します。
+
 
 ## ⚙️ 必要な環境
 
