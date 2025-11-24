@@ -5,12 +5,12 @@ Raspberry Pi OS セットアップ スクリプト (Python版)
 rpgiotestプロジェクト用
 
 使用方法:
-    python3 setup_rpi.py              # 通常実行（アップデート含む）
-    python3 setup_rpi.py --skip-update # アップデートをスキップ
-    python3 setup_rpi.py -s            # アップデートをスキップ (短縮形)
+    python3 setup_rpi.py              # 通常実行（高速、アップデートなし）
+    python3 setup_rpi.py --update      # アップデートを実行
+    python3 setup_rpi.py -u            # アップデートを実行 (短縮形)
 
 このスクリプトは以下の処理を自動化します:
-    - システムパッケージの更新 (--skip-update で スキップ可能)
+    - システムパッケージの更新 (--update で実行可能、デフォルトはスキップ)
     - 必須Pythonライブラリのインストール
     - pigpiod の自動起動設定
     - GPIO アクセス権の設定
@@ -79,9 +79,11 @@ def main():
     print_header("Raspberry Pi GPIO テストプロジェクト セットアップ")
     
     # コマンドラインオプションの確認
-    skip_update = "--skip-update" in sys.argv or "-s" in sys.argv
+    # Raspberry Pi Zero 2 W では時間がかかるため、デフォルトでスキップ
+    skip_update = not ("--update" in sys.argv or "-u" in sys.argv)
     if skip_update:
-        print_info("システムアップデートをスキップします")
+        print_info("システムアップデートをスキップします（高速化のため）")
+        print_info("アップデートする場合は '--update' オプションを使用してください")
         print()
     
     # Raspberry Pi チェック
@@ -96,7 +98,7 @@ def main():
     # ステップ 1: システム更新
     print_step(1, steps, "システムパッケージを更新中")
     if skip_update:
-        print_info("システムアップデートをスキップしました")
+        print_info("システムアップデートをスキップしました（高速化のため）")
         print()
     else:
         print_info("これには5〜10分かかる場合があります")
