@@ -23,54 +23,90 @@ servo = AngularServo(
 )
 
 
-def move_with_ramp(target: float, current: float, ramp_step: float | None, ramp_delay: float) -> float:
-    """角度をランプ移動で target へ。ramp_step が None の場合は即移動。"""
+def move_with_ramp(
+    target: float,
+    current: float,
+    ramp_step: float | None,
+    ramp_delay: float,
+    stuck_threshold: float,
+    stuck_max_steps: int,
+) -> float:
+    """角度をランプ移動で target へ。
+
+    - ramp_step が None の場合は即移動。
+    - 連続して角度変化が stuck_threshold 未満のステップが
+      stuck_max_steps 回続いたら機械的噛み込みとみなし KeyboardInterrupt を送出。
+    """
     if ramp_step is None:
         servo.angle = target
         return target
-    # 方向決定
+
     step = ramp_step if target > current else -ramp_step
     a = current
-    # 少しずつ移動
+    prev_a = a
+    stuck_count = 0
+
     while (step > 0 and a < target) or (step < 0 and a > target):
         a += step
         # オーバーシュート補正
         if (step > 0 and a > target) or (step < 0 and a < target):
             a = target
+
         servo.angle = a
+        # 実質的に動いていないかチェック
+        if abs(a - prev_a) < stuck_threshold:
+            stuck_count += 1
+            if stuck_count >= stuck_max_steps:
+                print("警告: サーボが機械的に噛み込んだ可能性があるため停止します")
+                raise KeyboardInterrupt
+        else:
+            stuck_count = 0
+
+        prev_a = a
         sleep(ramp_delay)
+
     return target
 
 
-def run(angle1: float, angle2: float, wait_time: float, loops: int | None, ramp_step: float | None, ramp_delay: float):
+def run(
+    angle1: float,
+    angle2: float,
+    wait_time: float,
+    loops: int | None,
+    ramp_step: float | None,
+    ramp_delay: float,
+    stuck_threshold: float,
+    stuck_max_steps: int,
+):
     count = 0
     print(
         f"開始: angle1={angle1}, angle2={angle2}, wait={wait_time}s, "
-        f"loops={'infinite' if loops is None else loops}, ramp_step={ramp_step}, ramp_delay={ramp_delay}s"
+        f"loops={'infinite' if loops is None else loops}, ramp_step={ramp_step}, ramp_delay={ramp_delay}s, "
+        f"stuck_threshold={stuck_threshold}, stuck_max_steps={stuck_max_steps}"
     )
     try:
         current = servo.angle if servo.angle is not None else angle1
         # 初期位置へ
-        current = move_with_ramp(angle1, current, ramp_step, ramp_delay)
+        current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
         sleep(wait_time)
         if loops is None:
             while True:
                 print(f"Angle: {angle1}")
-                current = move_with_ramp(angle1, current, ramp_step, ramp_delay)
+                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
 
                 print(f"Angle: {angle2}")
-                current = move_with_ramp(angle2, current, ramp_step, ramp_delay)
+                current = move_with_ramp(angle2, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
         else:
             for _ in range(loops):
                 count += 1
                 print(f"[Loop {count}/{loops}] Angle: {angle1}")
-                current = move_with_ramp(angle1, current, ramp_step, ramp_delay)
+                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
 
                 print(f"[Loop {count}/{loops}] Angle: {angle2}")
-                current = move_with_ramp(angle2, current, ramp_step, ramp_delay)
+                current = move_with_ramp(angle2, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
     except KeyboardInterrupt:
         print("\n停止しました (Ctrl+C)")
@@ -130,10 +166,31 @@ if __name__ == "__main__":
         default=0.02,
         help="ランプ移動ステップ間の待ち秒(既定: 0.02)",
     )
+    parser.add_argument(
+        "--stuck-threshold",
+        type=positive_float,
+        default=0.1,
+        help="機械的噛み込み検出用の最小有効角度変化(度) (既定: 0.1)",
+    )
+    parser.add_argument(
+        "--stuck-max-steps",
+        type=positive_int,
+        default=10,
+        help="上記しきい値未満の変化が連続した場合に停止するステップ数 (既定: 10)",
+    )
 
     args = parser.parse_args()
 
     if args.angle1 == args.angle2:
         parser.error("angle1 と angle2 が同じです。異なる角度を指定してください。")
 
-    run(args.angle1, args.angle2, args.wait, args.loops, args.ramp_step, args.ramp_delay)
+    run(
+        args.angle1,
+        args.angle2,
+        args.wait,
+        args.loops,
+        args.ramp_step,
+        args.ramp_delay,
+        args.stuck_threshold,
+        args.stuck_max_steps,
+    )
