@@ -14,13 +14,17 @@
 
 Raspberry Pi OS を再インストール後、以下のいずれかの方法でセットアップしてください。
 
+**注意**: Raspberry Pi Zero 2 W での高速セットアップのため、デフォルトでシステムアップデートをスキップします。セキュリティアップデートが必要な場合は `--update` オプションを使用してください。
+
 ### 方法 1: Bash スクリプト (推奨)
 
 ```bash
 git clone https://github.com/zorosdrone/rpgpiotest.git ~/rpgpiotest
 cd ~/rpgpiotest
 chmod +x setup.sh
-./setup.sh
+./setup.sh                # 高速セットアップ（アップデートなし）
+# または
+./setup.sh --update       # システムアップデートを含む（時間がかかります）
 ```
 
 ### 方法 2: Python スクリプト
@@ -28,7 +32,9 @@ chmod +x setup.sh
 ```bash
 git clone https://github.com/zorosdrone/rpgpiotest.git ~/rpgpiotest
 cd ~/rpgpiotest
-python3 setup_rpi.py
+python3 setup_rpi.py      # 高速セットアップ（アップデートなし）
+# または
+python3 setup_rpi.py --update  # システムアップデートを含む
 ```
 
 ### 方法 3: 手動セットアップ
@@ -187,6 +193,7 @@ pip3 install gpiozero pigpio flask RPi.GPIO
 - pigpiod は自動起動に設定されます
 - Web UI は同一ネットワーク内のデバイスからアクセス可能です
 - Ctrl+C でプログラムを終了できます
+- セットアップスクリプトはデフォルトでシステムアップデートをスキップします（Pi Zero 2 W での高速化のため）
 
 ## 📄 ライセンス
 
@@ -194,4 +201,4 @@ pip3 install gpiozero pigpio flask RPi.GPIO
 
 ---
 
-**最終更新**: 2025年11月21日
+**最終更新**: 2025年11月24日
