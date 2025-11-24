@@ -9,6 +9,8 @@
 - `03_servo_pro.py` - pigpio を使った高精度サーボ制御
 - `04_webServo.py` - pigpio を使って AngularServo を Web UI で操作
 - `041_webServo_key.py` - キーボード操作と左右ボタンでサーボを操作する Web UI
+- `05_keybordSarvo.py` - キーボードの矢印キー（a/d）でサーボ角度を制御
+- `06_coinpushout.py` - サーボを0度と180度の間で繰り返し動かす（コインプッシャー風）
 
 ## 🚀 クイックセットアップ
 
