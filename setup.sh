@@ -17,10 +17,11 @@ echo "================================================"
 echo ""
 
 # システムアップデートをスキップするかどうか
-SKIP_UPDATE=false
-if [ "$1" = "--skip-update" ] || [ "$1" = "-s" ]; then
-    SKIP_UPDATE=true
-    echo "⚠ システムアップデートをスキップします"
+# Raspberry Pi Zero 2 W では時間がかかるため、デフォルトでスキップ
+SKIP_UPDATE=true
+if [ "$1" = "--update" ] || [ "$1" = "-u" ]; then
+    SKIP_UPDATE=false
+    echo "ℹ システムアップデートを実行します"
     echo ""
 fi
 
@@ -28,14 +29,14 @@ fi
 if [ "$SKIP_UPDATE" = false ]; then
     echo "[1/7] システムパッケージを更新中..."
     echo "⚠ これには5〜10分かかる場合があります..."
-    echo "スキップする場合は Ctrl+C を押すか、'./setup.sh --skip-update' で実行してください"
     echo ""
     sudo apt-get update
     sudo apt-get upgrade -y
     echo "✓ システム更新完了"
     echo ""
 else
-    echo "[1/7] システムアップデートをスキップしました"
+    echo "[1/7] システムアップデートをスキップしました（高速化のため）"
+    echo "    アップデートする場合は './setup.sh --update' で実行してください"
     echo ""
 fi
 
@@ -118,8 +119,8 @@ echo "  セットアップ完了！"
 echo "================================================"
 echo ""
 echo "📌 使用方法:"
-echo "  • 通常実行:           ./setup.sh"
-echo "  • アップデートなし:   ./setup.sh --skip-update"
+echo "  • 通常実行（高速）:   ./setup.sh"
+echo "  • アップデート実行:   ./setup.sh --update"
 echo ""
 echo "📦 インストール場所:"
 echo "  • Python パッケージ: ~/rpgpiotest/venv 内"
