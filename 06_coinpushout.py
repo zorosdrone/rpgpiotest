@@ -1,5 +1,5 @@
 import argparse
-from time import sleep
+from time import sleep, monotonic
 
 from gpiozero import AngularServo
 from gpiozero.pins.pigpio import PiGPIOFactory
@@ -34,8 +34,8 @@ def move_with_ramp(
     """角度をランプ移動で target へ。
 
     - ramp_step が None の場合は即移動。
-    - 連続して角度変化が stuck_threshold 未満のステップが
-      stuck_max_steps 回続いたら機械的噛み込みとみなし KeyboardInterrupt を送出。
+        - 連続して角度変化が stuck_threshold 未満のステップが
+            stuck_max_steps 回続いたら機械的噛み込みとみなし KeyboardInterrupt を送出。
     """
     if ramp_step is None:
         servo.angle = target
@@ -46,7 +46,21 @@ def move_with_ramp(
     prev_a = a
     stuck_count = 0
 
+    # 理論上の移動時間からタイムアウト(安全係数2倍)を自動計算
+    total_delta = abs(target - current)
+    if ramp_step > 0:
+        steps = max(1, int(total_delta / ramp_step))
+    else:
+        steps = 1
+    theoretical_time = steps * ramp_delay
+    move_timeout = theoretical_time * 2.0
+    start_t = monotonic()
+
     while (step > 0 and a < target) or (step < 0 and a > target):
+        if monotonic() - start_t > move_timeout:
+            print("移動タイムアウト: 想定時間の2倍を超えたためサーボを解放します")
+            servo.detach()
+            raise KeyboardInterrupt
         a += step
         # オーバーシュート補正
         if (step > 0 and a > target) or (step < 0 and a < target):
@@ -85,28 +99,27 @@ def run(
         f"stuck_threshold={stuck_threshold}, stuck_max_steps={stuck_max_steps}"
     )
     try:
-        current = servo.angle if servo.angle is not None else angle1
-        # 初期位置へ
-        current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
+        current = servo.angle if servo.angle is not None else angle2
+        # 初期位置へ（angle2 側に合わせる）
+        current = move_with_ramp(angle2, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
         sleep(wait_time)
         if loops is None:
             while True:
-                print(f"Angle: {angle1}")
-                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
-                sleep(wait_time)
-
                 print(f"Angle: {angle2}")
                 current = move_with_ramp(angle2, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
+                sleep(wait_time)
+                print(f"Angle: {angle1}")
+                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
         else:
             for _ in range(loops):
                 count += 1
-                print(f"[Loop {count}/{loops}] Angle: {angle1}")
-                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
-                sleep(wait_time)
-
                 print(f"[Loop {count}/{loops}] Angle: {angle2}")
                 current = move_with_ramp(angle2, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
+                sleep(wait_time)
+
+                print(f"[Loop {count}/{loops}] Angle: {angle1}")
+                current = move_with_ramp(angle1, current, ramp_step, ramp_delay, stuck_threshold, stuck_max_steps)
                 sleep(wait_time)
     except KeyboardInterrupt:
         print("\n停止しました (Ctrl+C)")
@@ -149,8 +162,8 @@ if __name__ == "__main__":
         "--loops",
         "-l",
         type=positive_int,
-        default=None,
-        help="往復ループ回数。指定しない場合は無限ループ。",
+        default=1,
+        help="往復ループ回数。指定しない場合は1回のみ。",
     )
     parser.add_argument(
         "--ramp-step",
